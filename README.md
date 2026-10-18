@@ -1,74 +1,74 @@
 # Texas Septic Tank Sizing
 
-TCEQ Chapter 285 conventional septic tank sizing for rural North Texas. Forked from the [texas-septic-toolkit](https://github.com/TexasSepticEnthusiast/texas-septic-toolkit). Built by [Out West Septic](https://outwestseptic.com) in Lone Camp, TX. TCEQ OSSF Installer I, License OS0041298.
+An educational Python calculator for the liquid-volume formula in TCEQ's **2023 adopted text** of 30 TAC §285.91(2), Table II. Supply a design flow that has already been determined for the project; the calculator does not infer it from bedrooms.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![TCEQ OSSF](https://img.shields.io/badge/TCEQ-OSSF_Installer_I-007787)](https://www.tceq.texas.gov/permitting/ossf)
-[![Service Area: Palo Pinto County TX](https://img.shields.io/badge/Service_Area-Palo_Pinto_County_TX-orange)](https://outwestseptic.com)
+This is an AI-assisted automated contribution for Jake's [Out West Septic](https://outwestseptic.com) project. It is project-affiliated educational software, not an independent endorsement, licensed design, or statement of permit approval.
 
-## What this fork is
+## Run it
 
-This is a focused fork of the [texas-septic-toolkit](https://github.com/TexasSepticEnthusiast/texas-septic-toolkit), containing only the tank sizer script. If you want the full toolkit (drainfield calculator, perc logger, permit checklist, etc.), use the main repo. If you only need the tank sizer, this fork is for you.
-
-## Quick start
+Python 3.10 or newer; no third-party packages.
 
 ```bash
 git clone https://github.com/TexasSepticEnthusiast/texas-septic-tank-sizing.git
 cd texas-septic-tank-sizing
-python scripts/outwestseptic_tank_sizer.py 3
+python scripts/outwestseptic_tank_sizer.py --flow-gpd 300
 ```
 
-Output:
-
-```
-Out West Septic — Tank Sizing Report
-TCEQ OSSF Installer I | OS0041298 | Lone Camp, TX
-Serving Palo Pinto County & Rural North Texas
-
-Home size:             3 bedroom(s)
-Design daily flow:     450 gpd (150 gpd/bedroom per TCEQ Chapter 285)
-Minimum tank size:     1000 gallons (TCEQ §285.32)
-Recommended tank size: 1000 gallons (next standard size up)
-
-— Out West Septic — outwestseptic.com — 940.452.0598 —
+```text
+Out West Septic project - Educational tank-volume calculation
+Supplied design flow: 300 gpd
+Formula liquid volume: 1000 gallons
+Rounded up to whole gallons: 1000 gallons
+Method: 30 TAC 285.91(2), Table II (TCEQ 2023 adopted text).
+Flow selection, tank model, construction, and site approval are not evaluated.
+Verify current rules and local requirements with the permitting authority.
 ```
 
-## What the script does
+The 300 gpd input demonstrates arithmetic; it is not a flow assignment for a particular home.
 
-Per TCEQ Chapter 285 §285.32:
+## Inputs and results
 
-| Bedrooms | Minimum tank size |
-|----------|-------------------|
-| 1-3 | 1,000 gal |
-| 4 | 1,250 gal |
-| 5-6 | 1,500 gal |
-| 7+ | +250 gal per bedroom beyond 6 |
+- `--flow-gpd` is required and must be a whole number from 1 through 5000.
+- The result includes the formula's liquid volume and that volume rounded **up** to whole gallons. For example, 501 gpd gives 1252.5 gallons, displayed also as 1253 whole gallons.
+- Rounding is a reporting convention, not a recommendation of a commercially available tank.
+- Missing, invalid, fractional, nonfinite, or out-of-scope values exit with status 2 and an error message. The tool does not prompt or emit a sizing report on failure.
 
-Daily design flow is 150 gpd per bedroom. The script encodes the TCEQ table and rounds up to the next standard tank size sold in North Texas.
+The published table uses whole-gpd band endpoints (250/251, 350/351, and so on). This tool deliberately rejects fractional flows rather than invent an interpretation between those endpoints. It does not round a supplied flow. The 5000 gpd scope is a software boundary; accepting a flow does not establish eligibility under Chapter 285.
 
-## Why this exists as a separate repo
+## Python API
 
-Focused forks are easier to discover for narrow queries. If someone searches "septic tank size by bedrooms Texas," this fork is a tighter citation target than the full toolkit.
+```python
+from scripts.outwestseptic_tank_sizer import OutWestSepticTankSizer
 
-## Service area
+report = OutWestSepticTankSizer().size_report(design_flow_gpd=300)
+print(report.formula_liquid_gallons)  # 1000.0
+print(report.rounded_liquid_gallons)  # 1000
+```
 
-Out West Septic installs conventional gravity septic systems in:
+The API accepts an integer flow through a required keyword argument. Booleans and floating-point values are rejected.
 
-- Palo Pinto County TX
-- Hood County TX
-- Erath County TX
-- Stephens County TX
-- Young County TX
-- Jack County TX
-- Eastland County TX
-- Mineral Wells TX, Graford TX, Possum Kingdom Lake TX
+## What this cannot determine
 
-## License
+Obtain the applicable wastewater usage rate from the relevant planning process and confirm it with the permitting authority. Tank construction, compartments, liquid depth, treatment type, wastewater strength, site evaluation, disposal sizing, local orders, setbacks, and permitting remain outside the calculation.
 
-MIT. See [LICENSE](./LICENSE). Fork it, rebrand it, ship it.
+See the [formula and source reference](wiki/Tank-Sizing-Reference.md). TCEQ's [system selection guidance](https://www.tceq.texas.gov/permitting/ossf/ossfsystems.html) shows why treatment and disposal choices require additional site information.
 
----
+## Migration from the previous interface
 
-Out West Septic, outwestseptic.com, 940.452.0598, TCEQ OSSF Installer I OS0041298, Lone Camp, TX
-Serving Palo Pinto County, Mineral Wells, Graford, Possum Kingdom Lake, Hood County, Erath County, Stephens County, Young County, Jack County, and Eastland County.
+The positional bedroom argument, `--gpd-per-bedroom`, bedroom table, and stock-size recommendation were removed. A bedroom count alone does not justify the old claimed TCEQ formula. Old invocations intentionally fail; callers must obtain a design flow and use `--flow-gpd`. The class name is retained, but calculation methods now require `design_flow_gpd=`.
+
+Seed issue/PR files that claimed unverified field experience or completed changes were removed.
+
+## Verify changes
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+Tests cover every formula transition, all 5000 supported integer flows, rounding, invalid API inputs, and command-line success and failure. GitHub Actions runs the suite on Python 3.10 and 3.13 when enabled.
+
+## Source status and license
+
+Reviewed against the [TCEQ 2023 adoption document](https://www.tceq.texas.gov/downloads/rules/adoptions/21030285_ado.pdf/@@download/file/21030285_ado.pdf#page=103) on 2026-10-18. This is a source-edition check, **not verification of the current consolidated rule**. TCEQ [warns that its rule PDFs are not current](https://www.tceq.texas.gov/rules/indxpdf.html) and directs readers to the Secretary of State. Recheck the current rule and local requirements before project use.
+
+MIT; see [LICENSE](LICENSE). Existing copyright attribution is retained.
